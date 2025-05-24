@@ -6,7 +6,6 @@ from rest_framework.serializers import (
     ValidationError
 )
 from django.core.validators import MinValueValidator
-from django.db import transaction
 
 from users.utils import Base64ImageField
 from ingredients.models import Ingredient
