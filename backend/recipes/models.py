@@ -1,8 +1,15 @@
+import base64
 from django.db import models
+from django.urls import reverse
 from django.core.validators import MinValueValidator
+from django.conf import settings
 
 from users.models import CustomUser
 from ingredients.models import Ingredient
+from .constants import (
+    RECIPE_NAME_MAX_LENGTH,
+    COOKING_TIME_MIN_VALUE
+)
 
 
 class Recipe(models.Model):
@@ -10,7 +17,7 @@ class Recipe(models.Model):
     Модель для рецептов
     """
     name = models.CharField(
-        max_length=256,
+        max_length=RECIPE_NAME_MAX_LENGTH,
         null=False,
         blank=False,
         verbose_name='Название рецепта',
@@ -26,7 +33,8 @@ class Recipe(models.Model):
         verbose_name='Время приготовления(в минутах)',
         validators=[
             MinValueValidator(
-                1, message='Время приготовлений не должно быть меньше 1 минуты'),
+                COOKING_TIME_MIN_VALUE, message=f'Время приготовлений'
+                f' не должно быть меньше {COOKING_TIME_MIN_VALUE} минуты'),
         ],
     )
     image = models.ImageField(
@@ -41,11 +49,13 @@ class Recipe(models.Model):
         verbose_name='Автор рецепта',
         null=False,
         blank=False,
+        related_name='user_recipes',
     )
     ingredients = models.ManyToManyField(
         Ingredient,
         verbose_name='Ингредиенты',
-        through='RecipeIngredient'
+        through='RecipeIngredient',
+        related_name='recipe_ingredients',
     )
     pub_date = models.DateTimeField(
         auto_now=True,
@@ -57,6 +67,18 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ['-pub_date']
+
+    def get_absolute_url(self):
+        return reverse(
+            "recipes-detail",
+            kwargs={"pk": self.pk}
+        )
+
+    def get_short_url(self):
+        encoded_id = base64.urlsafe_b64encode(
+            str(self.pk).encode()
+        ).decode().strip('=')
+        return f"https://{settings.DOMAIN}/s/{encoded_id}"
 
     def __str__(self) -> str:
         return self.name
@@ -79,7 +101,6 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингредиент',
         null=False,
         blank=False,
-
     )
     amount = models.IntegerField(
         blank=False,
@@ -111,6 +132,7 @@ class FavouriteUserRecipe(models.Model):
         verbose_name='Пользователь',
         blank=False,
         null=False,
+        related_name='user_favs',
     )
     recipe = models.ForeignKey(
         Recipe,
@@ -145,6 +167,7 @@ class ShoppingCart(models.Model):
         verbose_name='Пользователь',
         blank=False,
         null=False,
+        related_name='user_shops',
     )
     recipe = models.ForeignKey(
         Recipe,

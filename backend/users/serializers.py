@@ -2,14 +2,16 @@ from rest_framework import serializers
 from rest_framework.serializers import ImageField
 from djoser.serializers import UserCreateSerializer, SetPasswordSerializer
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from drf_extra_fields.fields import Base64ImageField
 
+from .constants import (
+    USER_FIRST_NAME_MAX_LENGTH,
+    USER_LAST_NAME_MAX_LENGTH,
+    USER_USERNAME_MAX_LENGTH,
+)
 from .models import (
     CustomUser,
-    Follow
 )
-from recipes.models import Recipe
-from recipes.serializers import SimpleRecipeSerializer
-from .utils import Base64ImageField
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,7 +38,10 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return False
-        return Follow.objects.filter(user=request.user, following=obj).exists()
+        return CustomUser.objects.filter(
+            follower__user=request.user,
+            followers__following=obj
+        ).exists()
 
 
 class CreateUserSerializer(UserCreateSerializer):
@@ -63,23 +68,26 @@ class CreateUserSerializer(UserCreateSerializer):
         read_only_fields = ('id',)
 
     def validate_username(self, value):
-        if len(value) > 150:
+        if len(value) > USER_USERNAME_MAX_LENGTH:
             raise serializers.ValidationError(
-                'Username должен быть меньше 150 символов длиной!'
+                f'Username должен быть меньше '
+                f'{USER_USERNAME_MAX_LENGTH} символов длиной!'
             )
         return value
 
     def validate_first_name(self, value):
-        if len(value) > 150:
+        if len(value) > USER_FIRST_NAME_MAX_LENGTH:
             raise serializers.ValidationError(
-                'First_name должен быть меньше 150 символов длиной!'
+                f'First_name должен быть меньше '
+                f'{USER_FIRST_NAME_MAX_LENGTH} символов длиной!'
             )
         return value
 
     def validate_last_name(self, value):
-        if len(value) > 150:
+        if len(value) > USER_LAST_NAME_MAX_LENGTH:
             raise serializers.ValidationError(
-                'Last_name должен быть меньше 150 символов длиной!'
+                f'Last_name должен быть меньше '
+                f'{USER_LAST_NAME_MAX_LENGTH} символов длиной!'
             )
         return value
 
@@ -88,11 +96,16 @@ class AvatarBaseSerializer(serializers.ModelSerializer):
     """
     Сериализатор для добавления и удаления аватара пользователя.
     """
-    avatar = Base64ImageField(required=True)
+    avatar = Base64ImageField()
 
     class Meta:
         model = CustomUser
         fields = ('avatar',)
+        extra_kwargs = {
+            'avatar': {
+                'required': True,
+            }
+        }
 
 
 class AvatarSerializer(serializers.ModelSerializer):
@@ -117,44 +130,3 @@ class CustomSetPasswordSerializer(SetPasswordSerializer):
         user.set_password(new_password)
         user.save()
         return user
-
-
-class FollowSerializer(UserSerializer):
-    """
-    Сериализатор для списка подписок пользователя.
-    Возвращает данные автора и его рецепты.
-    """
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-
-    class Meta(UserSerializer.Meta):
-        fields = [
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count',
-            'avatar',
-        ]
-
-    def get_recipes(self, obj):
-        query_params = self.context['request'].query_params
-        recipes_limit = query_params.get('recipes_limit')
-        recipes = Recipe.objects.filter(
-            author__username=obj.username,
-        )
-        if recipes_limit:
-            recipes_limit = int(recipes_limit)
-            recipes = recipes[:recipes_limit]
-        serializer = SimpleRecipeSerializer(recipes, many=True)
-        return serializer.data
-
-    def get_recipes_count(self, obj):
-        following = CustomUser.objects.get(username=obj.username)
-        recipes_count = Recipe.objects.filter(
-            author=following,
-        ).count()
-        return recipes_count

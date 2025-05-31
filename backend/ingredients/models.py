@@ -1,5 +1,10 @@
 from django.db import models
 
+from .constants import (
+    INGREDIENT_MEASURE_UNIT_MAX_LENGTH,
+    INGREDIENT_NAME_MAX_LENGTH
+)
+
 
 class Ingredient(models.Model):
     """
@@ -7,13 +12,13 @@ class Ingredient(models.Model):
     """
     name = models.CharField(
         verbose_name='Название ингредиента',
-        max_length=32,
+        max_length=INGREDIENT_NAME_MAX_LENGTH,
         blank=False,
         null=False,
     )
     measurement_unit = models.CharField(
         verbose_name='Единица измерения',
-        max_length=8,
+        max_length=INGREDIENT_MEASURE_UNIT_MAX_LENGTH,
         blank=False,
         null=False,
     )

@@ -9,12 +9,6 @@ router = DefaultRouter()
 
 router.register(
     r'users',
-    views.FollowViewSet,
-    basename='follows'
-)
-
-router.register(
-    r'users',
     views.ProfileViewSet,
     basename='profile'
 )
@@ -41,24 +35,6 @@ urlpatterns = [
                 'post': 'set_password',
             }
         ),
-    ),
-    path(
-        'users/<int:pk>/subscribe/',
-        views.FollowViewSet.as_view(
-            {
-                'post': 'subscribe',
-                'delete': 'unsubscribe',
-            }
-        ),
-        name='user_follow_unfollow',
-    ),
-    path(
-        'users/subscriptions/',
-        views.FollowViewSet.as_view(
-            {
-                'get': 'list_subscriptions',
-            }
-        )
     ),
     path(
         'users/me/avatar/',

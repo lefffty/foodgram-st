@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CustomUser, Follow
+from .models import CustomUser
 
 
 @admin.register(CustomUser)
@@ -19,14 +19,4 @@ class CustomUserAdmin(admin.ModelAdmin):
     ]
     ordering = [
         'first_name', 'last_name',
-    ]
-
-
-@admin.register(Follow)
-class FollowAdmin(admin.ModelAdmin):
-    """
-    Админка для модели подписок
-    """
-    list_display = [
-        'user', 'following',
     ]

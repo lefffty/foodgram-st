@@ -56,8 +56,6 @@
       "user_permissions": []
     }
   },
-  { "model": "users.follow", "pk": 2, "fields": { "user": 4, "following": 1 } },
-  { "model": "users.follow", "pk": 3, "fields": { "user": 1, "following": 4 } },
   {
     "model": "recipes.recipe",
     "pk": 1,

@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
     'ingredients.apps.IngredientsConfig',
+    'follows.apps.FollowsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -97,8 +98,8 @@ DATABASES = {
         'NAME': os.getenv('POSTGRES_DB'),
         'USER': os.getenv('POSTGRES_USER'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': 'db',
-        # 'HOST': os.getenv('DB_HOST'),
+        # 'HOST': 'db',
+        'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
     }
 }
@@ -157,6 +158,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+DOMAIN = 'foodgram.example.org'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/

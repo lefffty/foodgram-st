@@ -1,11 +1,12 @@
+import base64
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, action
-from django.shortcuts import get_object_or_404
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Sum
 from django.http import HttpRequest, HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
     Recipe,
@@ -13,6 +14,7 @@ from .models import (
     ShoppingCart,
     RecipeIngredient
 )
+from .filters import RecipeFilter
 from users.paginators import PageLimitPagination
 from .serializers import (
     RecipeListDetailSerializer,
@@ -169,34 +171,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = PageLimitPagination
     permission_classes = [IsAuthenticatedOrReadOnly, OwnerOrReadOnly]
-
-    def filter_queryset(self, queryset):
-        """
-        Функция, обеспечивающая фильтрацию
-        списка рецептов по следующим параметрам:
-            - author(фильтрация по автору)
-            - is_favorited(фильтрация по избранным рецептам)
-            - is_in_shopping_cart(фильтрация по рецептам, добавленным в список
-                        покупок)
-        """
-        queryset = super().filter_queryset(queryset)
-        query_params = self.request.query_params
-
-        author = query_params.get('author')
-        is_favorited = query_params.get('is_favorited')
-        is_in_shopping_cart = query_params.get('is_in_shopping_cart')
-
-        if author:
-            queryset = queryset.filter(author__id=author)
-
-        if self.request.user.is_authenticated:
-            if is_in_shopping_cart:
-                queryset = queryset.filter(
-                    shopping_cart__user=self.request.user)
-            if is_favorited:
-                queryset = queryset.filter(favorites__user=self.request.user)
-
-        return queryset
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
         """
@@ -213,12 +189,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Функция получения короткой ссылки на рецепт
         """
         recipe = self.get_object()
-        full_url = reverse('recipes-detail', args=[recipe.pk])
-        return Response({'short-link': full_url}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                'short-link': recipe.get_short_url()
+            },
+            status=status.HTTP_200_OK
+        )
 
     def create(self, request, *args, **kwargs):
         """
         Переопределение функции создания объекта(метод POST)
+        Ваш комментарий: Избыточно переопределять целые методы.
+                Достаточно для нужных методов получить подходящий сериализатор.
+        В данном случае, на мой взгляд, переопределение нужно, так как
+        в них реализуется пользовательская(в смысле нестандартная) логика
+        работы с моделями.
         """
         create_serializer = self.get_serializer(data=request.data)
         create_serializer.is_valid(raise_exception=True)
@@ -254,9 +239,26 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
-    # def perform_create(self, serializer):
-    #     """
-    #     Переопределение функции создания объекта перед сохранением
-    #     в базу данных
-    #     """
-    #     serializer.save()
+
+class ShortLinkViewSet(viewsets.ViewSet):
+    """
+    Обработка коротких ссылок вида /s/<encoded_id>/
+    """
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='https://foodgram.example.org/s/(?P<encoded_id>[a-zA-Z0-9_-]+)'
+    )
+    def redirect_from_short_link(self, request, encoded_id=None):
+        """Редирект по короткой ссылке"""
+        try:
+            decoded_bytes = base64.urlsafe_b64decode(
+                encoded_id + '=' * (4 - len(encoded_id) % 4)
+            )
+            recipe_id = int(decoded_bytes.decode())
+            return redirect('recipe-detail', pk=recipe_id)
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'Неправильная короткая ссылка'},
+                status=status.HTTP_404_NOT_FOUND
+            )
