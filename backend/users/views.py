@@ -38,7 +38,6 @@ class UserDetailViewSet(viewsets.GenericViewSet,
     """
     Вьюсет, который обеспечивает реализацию следующей функции:
         - получение пользователя по его идентификатору
-
     """
     queryset = User.objects.all()
     permission_classes = [AllowAny]

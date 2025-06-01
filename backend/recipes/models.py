@@ -84,7 +84,7 @@ class Recipe(models.Model):
         return self.name
 
 
-class RecipeIngredient(models.Model):
+class  (models.Model):
     """
     Модель для связи рецептов с ингредиентами
     """
