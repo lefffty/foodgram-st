@@ -76,27 +76,6 @@ class FollowViewSet(viewsets.GenericViewSet):
                 following=author
             ).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-    # @action(detail=True, methods=['DELETE'], url_path='subscribe')
-    # def unsubscribe(self, request, pk=None):
-    #     """
-    #     Функция отписки от пользователя
-    #     """
-    #     author = self.get_object()
-    #     if not Follow.objects.filter(
-    #         user=request.user,
-    #         following=author
-    #     ).exists():
-    #         return Response(
-    #             {
-    #                 'detail': 'Такой подписки не существует!'
-    #             },
-    #             status=status.HTTP_400_BAD_REQUEST,
-    #         )
-    #     Follow.objects.filter(
-    #         user=request.user,
-    #         following=author
-    #     ).delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['GET'], url_path='subscriptions')
     def list_subscriptions(self, request):
