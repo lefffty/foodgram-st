@@ -18,19 +18,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from recipes.views import ShortLinkViewSet
-
 
 urlpatterns = [
-    path(
-        'https://foodgram.example.org/s/<encoded_id>/',
-        ShortLinkViewSet.as_view(
-            {
-                'get': 'redirect_from_short_link'
-            }
-        ),
-        name='recipes-short',
-    ),
     path('admin/', admin.site.urls),
     path('api/', include('follows.urls')),
     path('api/', include('users.urls')),

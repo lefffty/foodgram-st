@@ -99,6 +99,7 @@ DATABASES = {
         'USER': os.getenv('POSTGRES_USER'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
         'HOST': 'db',
+        # 'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
     }
 }
@@ -156,8 +157,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
-DOMAIN = 'foodgram.example.org'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/

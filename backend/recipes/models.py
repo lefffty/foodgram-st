@@ -1,8 +1,5 @@
-import base64
 from django.db import models
-from django.urls import reverse
 from django.core.validators import MinValueValidator
-from django.conf import settings
 
 from users.models import CustomUser
 from ingredients.models import Ingredient
@@ -55,7 +52,7 @@ class Recipe(models.Model):
         Ingredient,
         verbose_name='Ингредиенты',
         through='RecipeIngredient',
-        related_name='recipe_ingredients',
+        related_name='recipes',
     )
     pub_date = models.DateTimeField(
         auto_now=True,
@@ -67,18 +64,6 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         ordering = ['-pub_date']
-
-    def get_absolute_url(self):
-        return reverse(
-            "recipes-detail",
-            kwargs={"pk": self.pk}
-        )
-
-    def get_short_url(self):
-        encoded_id = base64.urlsafe_b64encode(
-            str(self.pk).encode()
-        ).decode().strip('=')
-        return f"https://{settings.DOMAIN}/s/{encoded_id}"
 
     def __str__(self) -> str:
         return self.name

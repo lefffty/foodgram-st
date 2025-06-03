@@ -2,6 +2,10 @@
 
 По адресу http://localhost изучите фронтенд веб-приложения, а по адресу http://localhost/api/docs/ — спецификацию API.
 
+Проект выполнил студент Шерепа Павел:
+  - Профиль на GitHub: https://github.com/lefffty
+  - Телеграм: https://t.me/leffffty
+
 # Запуск проекта
 
 Скопируйте проект к себе на компьютер, открыв терминал Git Bash в нужной для вас папке:
@@ -27,6 +31,12 @@ DJANGO_SECRET_KEY = 'django-insecure-0rwfqpsco*gn8fr303i%8^ei@#q^nca7#5o!-b=omta
 cd foodgram/infra
 docker compose up
 ```
+
+В процессе сборки Docker-контейнера будут выполнены миграции для Django с помощью следующей команды: 
+```
+CMD ["sh", "-c", "cp -r all_static/. /collected_static/static/ && python manage.py migrate --noinput && gunicorn --bind 0.0.0.0:8000 backend.wsgi"]
+```
+То есть вручную миграции применять не нужно.
 
 После успешного создания Docker-контейнера создайте еще один терминал Git Bash, перейдите в нем в папку infra и выполните следующую команду, которая загрузит фикстуры в проект:
 

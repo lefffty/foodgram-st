@@ -1,10 +1,12 @@
 from rest_framework.serializers import (
     SerializerMethodField
 )
+from django.contrib.auth import get_user_model
 
 from users.serializers import UserSerializer
 from recipes.serializers import SimpleRecipeSerializer
-from recipes.models import Recipe
+
+User = get_user_model()
 
 
 class FollowSerializer(UserSerializer):
@@ -34,9 +36,8 @@ class FollowSerializer(UserSerializer):
         """
         query_params = self.context['request'].query_params
         recipes_limit = query_params.get('recipes_limit')
-        recipes = Recipe.objects.filter(
-            author__username=obj.username,
-        )
+        user = self.context['request'].user
+        recipes = user.user_recipes.all()
         if recipes_limit and isinstance(recipes_limit, str):
             try:
                 recipes_limit = int(recipes_limit)
@@ -50,7 +51,5 @@ class FollowSerializer(UserSerializer):
         """
         Метод, подсчитывающий количество рецептов, созданных пользователем
         """
-        recipes_count = Recipe.objects.filter(
-            author=obj,
-        ).count()
+        recipes_count = obj.user_recipes.count()
         return recipes_count

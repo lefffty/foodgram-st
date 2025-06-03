@@ -1,18 +1,30 @@
-import base64
-from rest_framework import viewsets, status
+from rest_framework import (
+    viewsets,
+    status
+)
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.decorators import api_view, action
-from django.shortcuts import get_object_or_404, redirect
+from rest_framework.decorators import (
+    api_view,
+    action,
+)
+from django.shortcuts import (
+    get_object_or_404,
+    redirect,
+)
+from django.urls import reverse
 from django.db.models import Sum
-from django.http import HttpRequest, HttpResponse
+from django.http import (
+    HttpResponse,
+    HttpRequest,
+)
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import (
-    Recipe,
     FavouriteUserRecipe,
+    RecipeIngredient,
     ShoppingCart,
-    RecipeIngredient
+    Recipe,
 )
 from .filters import RecipeFilter
 from users.paginators import PageLimitPagination
@@ -22,6 +34,14 @@ from .serializers import (
     SimpleRecipeSerializer
 )
 from .permissions import OwnerOrReadOnly
+
+
+@api_view(['GET'])
+def redirect_from_short_link(request: HttpRequest, id):
+    """
+    Редирект с короткой ссылки
+    """
+    return redirect(f'/api/recipes/{id}/')
 
 
 @api_view(['POST', 'DELETE'])
@@ -183,82 +203,29 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeListDetailSerializer
         return RecipePostPatchSerializer
 
+    def get_serializer_context(self):
+        """
+        Добавляем request в контекст сериализатора
+        """
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
     @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
         """
         Функция получения короткой ссылки на рецепт
         """
-        recipe = self.get_object()
-        return Response(
-            {
-                'short-link': recipe.get_short_url()
-            },
-            status=status.HTTP_200_OK
-        )
-
-    def create(self, request, *args, **kwargs):
-        """
-        Переопределение функции создания объекта(метод POST)
-        Ваш комментарий: Избыточно переопределять целые методы.
-                Достаточно для нужных методов получить подходящий сериализатор.
-        В данном случае, на мой взгляд, переопределение нужно, так как
-        в них реализуется пользовательская(в смысле нестандартная) логика
-        работы с моделями.
-        """
-        create_serializer = self.get_serializer(data=request.data)
-        create_serializer.is_valid(raise_exception=True)
-        recipe = create_serializer.save()
-        read_serializer = RecipeListDetailSerializer(
-            recipe, context={'request': request}
-        )
-        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Переопределение функции частиного обновлени объекта(PATCH-запрос)
-        """
-        instance = self.get_object()
-        serializer = RecipePostPatchSerializer(
-            instance,
-            data=request.data,
-            partial=False,
-            context={
-                'request': request
-            },
-        )
-        serializer.is_valid(raise_exception=True)
-        recipe = serializer.save()
-        response_data = RecipeListDetailSerializer(
-            recipe,
-            context={
-                'request': request
-            },
+        obj = self.get_object()
+        short_url = request.build_absolute_uri(
+            reverse(
+                'redirect_from_short_link',
+                kwargs={
+                    'id': obj.pk,
+                }
+            ),
         )
         return Response(
-            response_data.data,
-            status=status.HTTP_200_OK
+            {'short-link': short_url, },
+            status=status.HTTP_200_OK,
         )
-
-
-class ShortLinkViewSet(viewsets.ViewSet):
-    """
-    Обработка коротких ссылок вида /s/<encoded_id>/
-    """
-    @action(
-        detail=False,
-        methods=['get'],
-        url_path='https://foodgram.example.org/s/(?P<encoded_id>[a-zA-Z0-9_-]+)'
-    )
-    def redirect_from_short_link(self, request, encoded_id=None):
-        """Редирект по короткой ссылке"""
-        try:
-            decoded_bytes = base64.urlsafe_b64decode(
-                encoded_id + '=' * (4 - len(encoded_id) % 4)
-            )
-            recipe_id = int(decoded_bytes.decode())
-            return redirect('recipe-detail', pk=recipe_id)
-        except (ValueError, TypeError):
-            return Response(
-                {'error': 'Неправильная короткая ссылка'},
-                status=status.HTTP_404_NOT_FOUND
-            )

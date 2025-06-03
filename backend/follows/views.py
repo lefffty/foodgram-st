@@ -22,65 +22,81 @@ class FollowViewSet(viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = PageLimitPagination
 
-    @action(detail=True, methods=['POST'], url_path='subscribe')
-    def subscribe(self, request, pk=None):
+    @action(detail=True, methods=['POST', 'DELETE'], url_path='subscribe')
+    def subscription(self, request, pk=None):
         """
         Функция подписки на пользователя
         """
         author = self.get_object()
-        if request.user == author:
-            return Response(
-                {
-                    'detail': 'Нельзя подписаться на самого себя'
-                },
-                status=status.HTTP_400_BAD_REQUEST
+        if request.method == 'POST':
+            if request.user == author:
+                return Response(
+                    {
+                        'detail': 'Нельзя подписаться на самого себя'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if Follow.objects.filter(
+                user=request.user,
+                following=author
+            ).exists():
+                return Response(
+                    {
+                        'detail': 'Такая подписка уже существует!',
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            Follow.objects.create(
+                user=request.user,
+                following=author
             )
-        if Follow.objects.filter(
-            user=request.user,
-            following=author
-        ).exists():
+            data = FollowSerializer(
+                author,
+                context={
+                    'request': request
+                }
+            ).data
             return Response(
-                {
-                    'detail': 'Такая подписка уже существует!',
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+                data,
+                status=status.HTTP_201_CREATED
             )
-        Follow.objects.get_or_create(
-            user=request.user,
-            following=author
-        )
-        data = FollowSerializer(
-            author,
-            context={
-                'request': request
-            }
-        ).data
-        return Response(
-            data,
-            status=status.HTTP_201_CREATED
-        )
-
-    @action(detail=True, methods=['DELETE'], url_path='subscribe')
-    def unsubscribe(self, request, pk=None):
-        """
-        Функция отписки от пользователя
-        """
-        author = self.get_object()
-        if not Follow.objects.filter(
-            user=request.user,
-            following=author
-        ).exists():
-            return Response(
-                {
-                    'detail': 'Такой подписки не существует!'
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        Follow.objects.filter(
-            user=request.user,
-            following=author
-        ).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        elif request.method == 'DELETE':
+            if not Follow.objects.filter(
+                user=request.user,
+                following=author
+            ).exists():
+                return Response(
+                    {
+                        'detail': 'Такой подписки не существует!'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            Follow.objects.filter(
+                user=request.user,
+                following=author
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+    # @action(detail=True, methods=['DELETE'], url_path='subscribe')
+    # def unsubscribe(self, request, pk=None):
+    #     """
+    #     Функция отписки от пользователя
+    #     """
+    #     author = self.get_object()
+    #     if not Follow.objects.filter(
+    #         user=request.user,
+    #         following=author
+    #     ).exists():
+    #         return Response(
+    #             {
+    #                 'detail': 'Такой подписки не существует!'
+    #             },
+    #             status=status.HTTP_400_BAD_REQUEST,
+    #         )
+    #     Follow.objects.filter(
+    #         user=request.user,
+    #         following=author
+    #     ).delete()
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['GET'], url_path='subscriptions')
     def list_subscriptions(self, request):

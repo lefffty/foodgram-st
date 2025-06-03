@@ -12,11 +12,13 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
+        verbose_name='Подписчик',
     )
     following = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='followers',
+        verbose_name='Подписка',
     )
 
     class Meta:
@@ -24,7 +26,11 @@ class Follow(models.Model):
             models.UniqueConstraint(
                 fields=['user', 'following'],
                 name='unique_followings'
-            )
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('following')),
+                name='user_cannot_follow_self'
+            ),
         ]
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'

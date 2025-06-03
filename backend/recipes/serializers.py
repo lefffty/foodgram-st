@@ -1,9 +1,9 @@
 from rest_framework.serializers import (
-    ModelSerializer,
     SerializerMethodField,
-    ImageField,
-    IntegerField,
     ValidationError,
+    ModelSerializer,
+    IntegerField,
+    ImageField,
 )
 from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
@@ -15,8 +15,8 @@ from ingredients.serializers import (
 )
 from users.serializers import UserSerializer
 from .models import (
+    RecipeIngredient,
     Recipe,
-    RecipeIngredient
 )
 from .constants import (
     COOKING_TIME_MIN_VALUE,
@@ -57,9 +57,6 @@ class RecipeListDetailSerializer(ModelSerializer):
             'cooking_time',
         )
 
-    def get_ingredients(self, obj):
-        return obj.recipeingredient_set.all()
-
     def get_is_favorited(self, obj):
         """
         Функция, обеспечивающая получение значения для поля is_favorited
@@ -68,12 +65,7 @@ class RecipeListDetailSerializer(ModelSerializer):
         user = request.user
         if user.is_anonymous:
             return False
-        if User.objects.filter(
-            user_favs__user=user,
-            user_favs__recipe=obj,
-        ).exists():
-            return True
-        return False
+        return user.user_favs.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         """
@@ -83,15 +75,7 @@ class RecipeListDetailSerializer(ModelSerializer):
         user = request.user
         if user.is_anonymous:
             return False
-        if User.objects.filter(
-            user_shops__user=user,
-            user_shops__recipe=obj,
-        ).exists():
-            return True
-        return False
-
-    def get_short_url(self, obj):
-        return obj.get_short_url()
+        return user.user_shops.filter(recipe=obj).exists()
 
 
 class RecipePostPatchSerializer(ModelSerializer):
@@ -115,6 +99,7 @@ class RecipePostPatchSerializer(ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
+            'id',
             'image',
             'name',
             'text',
@@ -169,7 +154,6 @@ class RecipePostPatchSerializer(ModelSerializer):
         _ingredients = []
 
         for ingredient in ingredients:
-            print(ingredient)
             _ingredients.append(
                 RecipeIngredient(
                     recipe=recipe,
@@ -194,16 +178,31 @@ class RecipePostPatchSerializer(ModelSerializer):
         self.save_ingredients(recipe, ingredients)
         return recipe
 
+    def validate(self, attrs):
+        """
+        Функция валидации данных
+        """
+        if attrs.get('ingredients') is None:
+            raise ValidationError(
+                'Нужно добавить хотя бы один ингредиент!'
+            )
+        return attrs
+
     def update(self, instance, validated_data):
         """
         Функция обновления данных в существующем рецепте
         """
         ingredients = validated_data.pop('ingredients', None)
         super().update(instance, validated_data)
-        if ingredients:
-            self.save_ingredients(instance, ingredients)
+        self.save_ingredients(instance, ingredients)
         instance.save()
         return instance
+
+    def to_representation(self, instance):
+        """
+        Переопределяем метод для возврата данных в нужном формате
+        """
+        return RecipeListDetailSerializer(instance, context=self.context).data
 
 
 class SimpleRecipeSerializer(ModelSerializer):

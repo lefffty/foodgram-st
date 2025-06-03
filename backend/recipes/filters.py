@@ -1,6 +1,6 @@
 from django_filters.rest_framework import (
+    NumberFilter,
     FilterSet,
-    NumberFilter
 )
 
 from recipes.models import Recipe
@@ -13,7 +13,6 @@ class RecipeFilter(FilterSet):
         - находится ли рецепт в избранном
         - находится ли рецепт в списке покупок
     """
-    author = NumberFilter(field_name='author')
     is_favorited = NumberFilter(method='filter_by_is_favorited')
     is_in_shopping_cart = NumberFilter(method='filter_by_is_in_shopping_cart')
 

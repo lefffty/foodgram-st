@@ -1,28 +1,14 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework import routers
 
 from . import views
 
 
 app_name = 'follows'
 
+router = routers.DefaultRouter()
+router.register(r'users', views.FollowViewSet, basename='follows')
 
 urlpatterns = [
-    path(
-        'users/<int:pk>/subscribe/',
-        views.FollowViewSet.as_view(
-            {
-                'post': 'subscribe',
-                'delete': 'unsubscribe',
-            }
-        ),
-        name='user_follow_unfollow',
-    ),
-    path(
-        'users/subscriptions/',
-        views.FollowViewSet.as_view(
-            {
-                'get': 'list_subscriptions',
-            }
-        )
-    ),
+    path('', include(router.urls)),
 ]

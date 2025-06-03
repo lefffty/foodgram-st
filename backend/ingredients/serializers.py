@@ -4,7 +4,6 @@ from rest_framework.serializers import (
     Serializer,
     PrimaryKeyRelatedField,
     ReadOnlyField,
-    ValidationError
 )
 
 from .models import Ingredient
@@ -41,6 +40,7 @@ class IngredientForRecipeSerializer(ModelSerializer):
     measurement_unit = ReadOnlyField(
         source='ingredient.measurement_unit',
     )
+    amount = IntegerField(read_only=True)
 
     class Meta:
         model = RecipeIngredient
@@ -56,24 +56,23 @@ class IngredientPatchSerializer(Serializer):
     """
     Сериализатор для методов "post" и "patch" вюьсета рецептов.
     """
-    amount = IntegerField(required=True)
+    amount = IntegerField(
+        min_value=INGREDIENT_MIN_VALUE,
+        error_messages={
+            'min_value': f'Количество не может '
+            f'быть меньше {INGREDIENT_MIN_VALUE}'
+        }
+    )
     id = PrimaryKeyRelatedField(
-        queryset=Ingredient.objects.all(),
-        source='ingredient'
+        queryset=Ingredient.objects.all()
     )
 
-    class Meta:
-        model = RecipeIngredient
-        fields = ['id', 'amount']
-
-    def validate_amount(self, value):
+    def to_internal_value(self, data):
         """
-        Функция, валидирующая добавляемые ингредиенты.
-        Осуществляет проверку на количество ингредиента
+        Переопределяем метод "to_internal_value"
         """
-        if value < INGREDIENT_MIN_VALUE:
-            raise ValidationError(
-                f'Количество ингредиентов не '
-                f'должно быть меньше {INGREDIENT_MIN_VALUE}!'
-            )
-        return value
+        ret = super().to_internal_value(data)
+        return {
+            'ingredient': ret['id'],
+            'amount': ret['amount']
+        }
