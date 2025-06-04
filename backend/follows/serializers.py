@@ -1,5 +1,6 @@
 from rest_framework.serializers import (
-    SerializerMethodField
+    SerializerMethodField,
+    IntegerField
 )
 from django.contrib.auth import get_user_model
 
@@ -15,7 +16,7 @@ class FollowSerializer(UserSerializer):
     Возвращает данные автора и его рецепты.
     """
     recipes = SerializerMethodField()
-    recipes_count = SerializerMethodField()
+    recipes_count = IntegerField(source='user_recipes.count')
 
     class Meta(UserSerializer.Meta):
         fields = [
@@ -36,20 +37,9 @@ class FollowSerializer(UserSerializer):
         """
         query_params = self.context['request'].query_params
         recipes_limit = query_params.get('recipes_limit')
-        user = self.context['request'].user
-        recipes = user.user_recipes.all()
-        if recipes_limit and isinstance(recipes_limit, str):
-            try:
-                recipes_limit = int(recipes_limit)
-                recipes = recipes[:recipes_limit]
-            except ValueError:
-                pass
+        recipes = obj.user_recipes.all()
+        if recipes_limit and recipes_limit.isdigit():
+            recipes_limit = int(recipes_limit)
+            recipes = recipes[:recipes_limit]
         serializer = SimpleRecipeSerializer(recipes, many=True)
         return serializer.data
-
-    def get_recipes_count(self, obj):
-        """
-        Метод, подсчитывающий количество рецептов, созданных пользователем
-        """
-        recipes_count = obj.user_recipes.count()
-        return recipes_count

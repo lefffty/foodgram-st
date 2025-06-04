@@ -41,7 +41,7 @@ def redirect_from_short_link(request: HttpRequest, id):
     """
     Редирект с короткой ссылки
     """
-    return redirect(f'/api/recipes/{id}/')
+    return redirect(f'/recipes/{id}/')
 
 
 @api_view(['POST', 'DELETE'])
@@ -229,3 +229,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'short-link': short_url, },
             status=status.HTTP_200_OK,
         )
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)

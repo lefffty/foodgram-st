@@ -173,7 +173,6 @@ class RecipePostPatchSerializer(ModelSerializer):
         ingredients = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(
             **validated_data,
-            author=self.context['request'].user
         )
         self.save_ingredients(recipe, ingredients)
         return recipe

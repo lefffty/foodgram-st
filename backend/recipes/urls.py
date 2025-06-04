@@ -13,11 +13,6 @@ router.register(r'recipes', views.RecipeViewSet, basename='recipes')
 
 urlpatterns = [
     path(
-        's/<int:id>/',
-        views.redirect_from_short_link,
-        name='redirect_from_short_link'
-    ),
-    path(
         'recipes/<int:id>/shopping_cart/',
         views.add_shopping_cart,
     ),

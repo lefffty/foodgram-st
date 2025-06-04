@@ -18,9 +18,16 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from recipes.views import redirect_from_short_link
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path(
+        's/<int:id>/',
+        redirect_from_short_link,
+        name='redirect_from_short_link'
+    ),
     path('api/', include('follows.urls')),
     path('api/', include('users.urls')),
     path('api/', include('ingredients.urls')),

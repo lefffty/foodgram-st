@@ -22,7 +22,10 @@ class RecipeAdmin(admin.ModelAdmin):
         'author', 'name'
     ]
     list_display = [
-        'id', 'name', 'pub_date',
+        'id', 'name', 'author', 'pub_date',
+    ]
+    list_display_links = [
+        'id', 'name',
     ]
     fields = (
         'name', 'text', 'cooking_time',
